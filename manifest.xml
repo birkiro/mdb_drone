@@ -1,0 +1,20 @@
+<package>
+  <description brief="mdb_drone">
+
+     mdb_drone
+
+  </description>
+  <author>ardrone</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/mdb_drone</url>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="tf"/>
+  <depend package="geometry_msgs"/>
+  <depend package="ardrone_autonomy"/>
+
+</package>
+
+
