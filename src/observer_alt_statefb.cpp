@@ -9,7 +9,7 @@ University of Southern Denmark
 //#include "std_msgs/Int32.h"
 #include <geometry_msgs/Twist.h>
 #include <ardrone_autonomy/Navdata.h>
-#include "std_msgs/Float32.h"
+//#include "std_msgs/Float32.h"
 
 #include <sstream>
 
@@ -32,8 +32,8 @@ double T_old		= 0.0;
 
 
 float takeoff_time	= 10.0;
-float fly_time		= 15.0;
-float land_time		= 3.0;
+float fly_time		= 5.0;
+float land_time		= 4.0;
 float kill_time 		= 4.0;	
 			
 void nav_callback(const ardrone_autonomy::Navdata& msg_in)
@@ -112,12 +112,12 @@ void setupFlyCommands()
 	twist_msg.angular.y=0.0;
 	twist_msg.angular.z=0.0;
 }
-double get_sampl_time(double T_now, double T_old){
-	double Ts = 0.0;
-	Ts = T_now - T_old;
-	T_old = T_now;
-	return Ts;
-}
+//double get_sampl_time(double T_now, double T_old){
+//	double Ts = 0.0;
+//	Ts = T_now - T_old;
+//	T_old = T_now;
+//	return Ts;
+//}
 
 int main(int argc, char** argv)
 {
@@ -150,12 +150,20 @@ int main(int argc, char** argv)
 		
 	ROS_INFO("Altitude Controller - Birkir & Ilja");
 
-	double altd_des = 1; // [m]
-	double Kp = 0.9; 	 // Up for discussion / Testing / Comparing with Izzet and Forrest Sim
+	double altd_des = 0.4; // [m]
+	double Kp = 0.4; 	 // Up for discussion / Testing / Comparing with Izzet and Forrest Sim
 	double  L  = 5;
 	double Ts = 0.0;
 	double z_hat = 0.0;
-	T_old = start_time;
+	
+	T = start_time;
+
+
+			bool drone_up = true;
+			double time_left, droneUp_time, altd_step;
+			int steps = 10;
+			int C = 1;
+			double altd_des_takeoff = 0.4;
 
 	while (ros::ok()) 
 	{
@@ -163,6 +171,19 @@ int main(int argc, char** argv)
 //TAKING_OFF & LANDING -------------------------------------------------------------------
 		while ((double)ros::Time::now().toSec() < start_time + takeoff_time)
 		{ //takeoff
+					if (altd != 0 && drone_up){
+						droneUp_time = (double)ros::Time::now().toSec();
+						drone_up = false;
+					}
+					time_left = start_time + takeoff_time - droneUp_time;
+					altd_step = altd_des_takeoff/steps;
+					if ((double)ros::Time::now().toSec() > droneUp_time + C*time_left/steps){
+						C++;
+					}
+					twist_msg = altitude_controller(C*altd_step, 1 - C*0.05, z_hat);
+					pub_twist.publish(twist_msg);
+		
+
 			T_old =	T;
 			nav_sub = node.subscribe("/ardrone/navdata", 1, nav_callback);
 			T = (double)ros::Time::now().toSec();
@@ -170,7 +191,15 @@ int main(int argc, char** argv)
 			z_hat = altitude_observer(L, Ts);
 			
 			pub_empty_takeoff.publish(emp_msg); //launches the drone
-			pub_twist.publish(twist_msg_hover); //drone is flat
+
+//	pub_twist.publish(twist_msg_hover); //drone is flat
+
+				
+			//---TakeOff without auto-hover---//		
+//			twist_msg = altitude_controller(0.9, 0.05, z_hat);
+//			pub_twist.publish(twist_msg);			
+			//--------------------------------//
+	
 			msg_z_hat.data = z_hat*1000; 		// Fill message with data
 			pub_z_hat.publish(msg_z_hat); 	// publish data. Try it with "rostopic echo /z_hat" when drone is connected
 
@@ -203,15 +232,13 @@ int main(int argc, char** argv)
 			}
 			ros::spinOnce();
 			loop_rate.sleep();			
-		}
+		} // while landing
 //--------------------------------------------------------------------------------------		
 
 		while ( (double)ros::Time::now().toSec() > start_time+takeoff_time && (double)ros::Time::now().toSec() < start_time + takeoff_time + fly_time)
 		{	
 			T_old =	T;
 			nav_sub = node.subscribe("/ardrone/navdata", 1, nav_callback);
-//			ROS_INFO("\nVx - %f    Vy - %f   Vz - %f",vx, vy);
-
 			T = (double)ros::Time::now().toSec();
 			Ts = T - T_old;
 
