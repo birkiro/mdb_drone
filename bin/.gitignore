@@ -1,0 +1,5 @@
+# Ignore compile source code!
+*
+
+# Keep the .gitignore file
+!.gitignore
