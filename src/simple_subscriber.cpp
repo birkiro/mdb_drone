@@ -7,8 +7,9 @@ University of Southern Denmark
 #include <geometry_msgs/Twist.h>
 #include <ardrone_autonomy/Navdata.h>
 
-double vx = 0.0;
-
+float tagx = 0; 
+uint32_t tags_count;
+uint32_t tags_xc[10];
 // nav_callback: This function is called every time a message is published
 //		 and the subscriber object picks it up. We can use the callback
 // 		 function to store the data and make sense of it and use it
@@ -16,10 +17,14 @@ double vx = 0.0;
 void nav_callback(const ardrone_autonomy::Navdata& msg_in)
 {
 	// Take in state of ardrone	
-	vx = msg_in.vx;
-	
+	printf("vector: %f\n", msg_in.tags_xc.size());
+	//vx = msg_in.vx;
+	tags_count=msg_in.tags_count;
 	// Write it to the terminal
-	
+	for (uint32_t i=0; i < tags_count; i++)
+    {
+		tags_xc[i]=msg_in.tags_xc[i];
+    }
 }
 			
 int main(int argc, char** argv)
@@ -33,7 +38,8 @@ int main(int argc, char** argv)
 	{
 		// ardrone_autonomy/Navdata publishes on /ardrone/navdata
 		nav_sub = node.subscribe("/ardrone/navdata", 1, nav_callback);	
-		ROS_INFO("getting sensor reading: %f [mm/s]", vx);	
+		//ROS_INFO("getting sensor reading: %f [mm/s]", vx);
+		//ROS_INFO("Tag Distance: X: %f", tagx/*, msg_in.tags_yc, msg_in.tags_distance*/);	
 		ros::spinOnce(); 	// receive published messages constantly
 	}
 	return 0; 	
