@@ -34,6 +34,7 @@ double land_time	= 2.0;
 double kill_time 	= 3.0;	
 double Tnow		= 0;
 double Told		= 0;
+double xy_lim 		= 0.4;
 
 float tiltY, tiltX;
 
@@ -67,7 +68,7 @@ geometry_msgs::Twist tag_controller(float Kx, float Ky, float Ki, float Kz, floa
 	if(tags_count){
 		yaw_pub = -Kangle*(tagOrient_des - tags_orientation[0]);
 		//vz_pub = Kz*(tagDist_des - tags_distance[0]);
-		vz_pub = Kz*(1850 - alt);;
+		vz_pub = Kz*(1850 - alt);
 		tiltX = tags_xc[0] - 185*sin(angX);
 		tiltY = tags_yc[0] - 185*sin(angY);
 		vy_pub = Ky*(yc_des - tiltY) + Ki*(yc_des - tiltY)*(Tnow - Told);					// tag detection X parameter is Y axis of velocity
@@ -76,10 +77,10 @@ geometry_msgs::Twist tag_controller(float Kx, float Ky, float Ki, float Kz, floa
 		if (yaw_pub < -0.3) yaw_pub = -0.3;
 		if (vz_pub > 0.3) vz_pub = 0.3;
 		if (vz_pub < -0.3) vz_pub = -0.3;
-		if (vy_pub > 0.15) vy_pub = 0.15;
-		if (vy_pub < -0.15) vy_pub = -0.15;
-		if (vx_pub > 0.15) vx_pub = 0.15;
-		if (vx_pub < -0.15) vx_pub = -0.15;
+		if (vy_pub > xy_lim) 	vy_pub = xy_lim;
+		if (vy_pub < -xy_lim) 	vy_pub = -xy_lim;
+		if (vx_pub > xy_lim) 	vx_pub = xy_lim;
+		if (vx_pub < -xy_lim) 	vx_pub = -xy_lim;
 
 		twist_msg_gen.linear.x  = vx_pub;
 		twist_msg_gen.linear.y  = vy_pub;
@@ -88,6 +89,7 @@ geometry_msgs::Twist tag_controller(float Kx, float Ky, float Ki, float Kz, floa
 		twist_msg_gen.angular.y = 1.0;
 		twist_msg_gen.angular.z = yaw_pub;
 		printf("xc:%d,yc:%d,zc:%d,ang:%d,vx:%f,vy:%f,vz:%f,angZ:%f,tiltY:%f,tiltX:%f\n", tags_xc[0],tags_yc[0],tags_distance[0],tags_orientation[0],vx_pub,vy_pub,vz_pub, yaw_pub,tiltY, tiltX);
+		//printf("tag_detected");
 	}
 	else {
 		vz_pub = Kz*(1850 - alt);
@@ -99,7 +101,7 @@ geometry_msgs::Twist tag_controller(float Kx, float Ky, float Ki, float Kz, floa
 		twist_msg_gen.angular.x = 0.0; 		// 0 means auto-hover mode
 		twist_msg_gen.angular.y = 0.0;		// 0 means auto-hover mode
 		twist_msg_gen.angular.z = 0.0;
-	}	
+	}
 	
 	return twist_msg_gen;
 }
@@ -112,7 +114,7 @@ geometry_msgs::Twist fly_front(float Kz){
 	if (vz_pub < -0.3) vz_pub = -0.3;
 	if (vz_pub > 0.3) vz_pub = 0.3;
 
-	twist_msg_gen.linear.x = 0.1;
+	twist_msg_gen.linear.x = 0.05;
 	twist_msg_gen.linear.y  = 0.0;
 	twist_msg_gen.linear.z  = vz_pub;
 	twist_msg_gen.angular.x = 0.0; 		// 0 means auto-hover mode
@@ -133,7 +135,7 @@ geometry_msgs::Twist turn(float Kz){
 	twist_msg_gen.linear.z  = vz_pub;
 	twist_msg_gen.angular.x = 0.0; 		// 0 means auto-hover mode
 	twist_msg_gen.angular.y = 0.0;		// 0 means auto-hover mode
-	twist_msg_gen.angular.z = 0.255;
+	twist_msg_gen.angular.z = 0.28;
 	return twist_msg_gen;
 }
 		
@@ -163,9 +165,9 @@ int main(int argc, char** argv)
 	ros::Publisher pub_empty_reset;
 	
 	double start_time;
-	float Kx = 0.00006;
-	float Ky = 0.00006;
-	float Ki = 0.09;
+	float Kx = 0.000005;
+	float Ky = 0.000005;
+	float Ki = 2;
 	float Kz = 0.0005;
 	float Kangle = 0.025;
 
@@ -176,7 +178,7 @@ int main(int argc, char** argv)
 
 	start_time =(double)ros::Time::now().toSec();	
 	double t0 = start_time + takeoff_time;
-	double search_time[12] = {t0+3,t0+6,t0+9,t0+12,t0+15,t0+18, t0+20, t0+23, t0+25, t0+28, t0+30, t0+33};
+	double search_time[12] = {t0+4,t0+7,t0+11,t0+13,t0+17,t0+20, t0+23, t0+26, t0+29, t0+32, t0+35, t0+38};
 	int i = 0;
 	system("rosservice call /ardrone/imu_recalib");	sleep(2);
 	while (ros::ok()) 
@@ -214,7 +216,7 @@ int main(int argc, char** argv)
 		{
 			printf("HOVERING\n");
 			pub_twist.publish(twist_msg_hover); //drone is flat
-
+			
 			if ((double)ros::Time::now().toSec() > search_time[11] + hover_time + land_time + kill_time)
 			{
 				pub_empty_land.publish(emp_msg); //lands the drone
@@ -228,7 +230,7 @@ int main(int argc, char** argv)
 		// Start Fly
 		while ( ((double)ros::Time::now().toSec() > start_time+takeoff_time + hover_time) && ((double)ros::Time::now().toSec() < search_time[i] + hover_time))
 		{	
-			printf("ST=>%f\n", search_time[i]);
+			//printf("ST=>%f\n", search_time[i]);
 			if (!Told) {
 				Told = (double)ros::Time::now().toSec();
 				Tnow = (double)ros::Time::now().toSec();
@@ -241,19 +243,30 @@ int main(int argc, char** argv)
 			// ardrone_autonomy/Navdata publishes on /ardrone/navdata
 			
 			nav_sub = node.subscribe("/ardrone/navdata", 1, nav_callback);
-			if (i%2 == 0){
-						// twist_msg = tag_controller(Kx, Ky, Ki, Kz, Kangle);
-				printf("front\n");
-				twist_msg = fly_front(Kz);
-				
+			
+			if(tags_count)
+			{ 
+				nav_sub = node.subscribe("/ardrone/navdata", 1, nav_callback);	
+				twist_msg = tag_controller(Kx, Ky, Ki, Kz, Kangle);
+				pub_twist.publish(twist_msg);
 			}
-			else twist_msg = turn(Kz);printf("turn\n");
-			printf("publish\n");
-			pub_twist.publish(twist_msg);
+			else
+			{
+				if (i%2 == 0){
+							// twist_msg = tag_controller(Kx, Ky, Ki, Kz, Kangle);
+					printf("front\n");
+					twist_msg = fly_front(Kz);
+					
+				}
+				else twist_msg = turn(Kz);printf("turn\n");
+				printf("publish\n");
+				pub_twist.publish(twist_msg);
+				
+				//loop_rate.sleep();
+			}
 			ros::spinOnce();
-			//loop_rate.sleep();
 		}	//END Fly
-		printf("Increasing i\n");
+		//printf("Increasing i\n");
 		if (i < 11) i++;
 		ros::spinOnce(); 	
 		loop_rate.sleep();
