@@ -28,7 +28,7 @@ const int32_t tagDist_des  	= 150; // cm
 const int32_t tagOrient_des  	= 90;
 
 double takeoff_time	= 5.0;
-double hover_time	= 8.0;
+double hover_time	= 3.0;
 double fly_time		= 50.0;
 double land_time	= 2.0;
 double kill_time 	= 3.0;	
@@ -153,7 +153,7 @@ geometry_msgs::Twist hover(){
 	
 int main(int argc, char** argv)
 {
-	system ("rosservice call /ardrone/flattrim"); sleep(4);
+	system ("rosservice call /ardrone/flattrim"); sleep(1);
 
 	ros::init(argc, argv,"Subscriber_Tester"); // can be seen using rxgraph or rqt_graph
 	ros::NodeHandle node;
@@ -165,9 +165,9 @@ int main(int argc, char** argv)
 	ros::Publisher pub_empty_reset;
 	
 	double start_time;
-	float Kx = 0.000005;
-	float Ky = 0.000005;
-	float Ki = 2;
+	float Kx = 0.00011;
+	float Ky = 0.00011;
+	float Ki = 0.011;
 	float Kz = 0.0005;
 	float Kangle = 0.025;
 
@@ -258,8 +258,8 @@ int main(int argc, char** argv)
 					twist_msg = fly_front(Kz);
 					
 				}
-				else twist_msg = turn(Kz);printf("turn\n");
-				printf("publish\n");
+				//else twist_msg = turn(Kz);printf("turn\n");
+				//printf("publish\n");
 				pub_twist.publish(twist_msg);
 				
 				//loop_rate.sleep();
