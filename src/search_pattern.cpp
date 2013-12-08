@@ -35,6 +35,7 @@ double kill_time 	= 3.0;
 double Tnow		= 0;
 double Told		= 0;
 double xy_lim 		= 0.4;
+float search_speed = 0.05;
 
 float tiltY, tiltX;
 
@@ -114,7 +115,7 @@ geometry_msgs::Twist fly_front(float Kz){
 	if (vz_pub < -0.3) vz_pub = -0.3;
 	if (vz_pub > 0.3) vz_pub = 0.3;
 
-	twist_msg_gen.linear.x = 0.05;
+	twist_msg_gen.linear.x = search_speed;
 	twist_msg_gen.linear.y  = 0.0;
 	twist_msg_gen.linear.z  = vz_pub;
 	twist_msg_gen.angular.x = 0.0; 		// 0 means auto-hover mode
@@ -122,20 +123,52 @@ geometry_msgs::Twist fly_front(float Kz){
 	twist_msg_gen.angular.z = 0.0;
 	return twist_msg_gen;
 }
-
-geometry_msgs::Twist turn(float Kz){
+geometry_msgs::Twist fly_back(float Kz){
 	geometry_msgs::Twist twist_msg_gen;
+	
+	float vz_pub;
+	vz_pub = Kz*(1850 - alt);
+	if (vz_pub < -0.3) vz_pub = -0.3;
+	if (vz_pub > 0.3) vz_pub = 0.3;
+
+	twist_msg_gen.linear.x = -search_speed;
+	twist_msg_gen.linear.y  = 0.0;
+	twist_msg_gen.linear.z  = vz_pub;
+	twist_msg_gen.angular.x = 0.0; 		// 0 means auto-hover mode
+	twist_msg_gen.angular.y = 0.0;		// 0 means auto-hover mode
+	twist_msg_gen.angular.z = 0.0;
+	return twist_msg_gen;
+}
+geometry_msgs::Twist fly_left(float Kz){
+	geometry_msgs::Twist twist_msg_gen;
+	
 	float vz_pub;
 	vz_pub = Kz*(1850 - alt);
 	if (vz_pub < -0.3) vz_pub = -0.3;
 	if (vz_pub > 0.3) vz_pub = 0.3;
 
 	twist_msg_gen.linear.x = 0.0;
-	twist_msg_gen.linear.y  = 0.0;
+	twist_msg_gen.linear.y  = search_speed;
 	twist_msg_gen.linear.z  = vz_pub;
 	twist_msg_gen.angular.x = 0.0; 		// 0 means auto-hover mode
 	twist_msg_gen.angular.y = 0.0;		// 0 means auto-hover mode
-	twist_msg_gen.angular.z = 0.28;
+	twist_msg_gen.angular.z = 0.0;
+	return twist_msg_gen;
+}
+geometry_msgs::Twist fly_right(float Kz){
+	geometry_msgs::Twist twist_msg_gen;
+	
+	float vz_pub;
+	vz_pub = Kz*(1850 - alt);
+	if (vz_pub < -0.3) vz_pub = -0.3;
+	if (vz_pub > 0.3) vz_pub = 0.3;
+
+	twist_msg_gen.linear.x = 0.0;
+	twist_msg_gen.linear.y  = -search_speed;
+	twist_msg_gen.linear.z  = vz_pub;
+	twist_msg_gen.angular.x = 0.0; 		// 0 means auto-hover mode
+	twist_msg_gen.angular.y = 0.0;		// 0 means auto-hover mode
+	twist_msg_gen.angular.z = 0.0;
 	return twist_msg_gen;
 }
 		
@@ -165,9 +198,9 @@ int main(int argc, char** argv)
 	ros::Publisher pub_empty_reset;
 	
 	double start_time;
-	float Kx = 0.00011;
-	float Ky = 0.00011;
-	float Ki = 0.011;
+	float Kx = 0.00011;		// tested Kx = 0.00011
+	float Ky = 0.00011;		// tested Ky = 0.00011
+	float Ki = 0.011;		// tested Ki = 0.011
 	float Kz = 0.0005;
 	float Kangle = 0.025;
 
@@ -178,7 +211,7 @@ int main(int argc, char** argv)
 
 	start_time =(double)ros::Time::now().toSec();	
 	double t0 = start_time + takeoff_time;
-	double search_time[12] = {t0+4,t0+7,t0+11,t0+13,t0+17,t0+20, t0+23, t0+26, t0+29, t0+32, t0+35, t0+38};
+	double search_time[12] = {t0+4,t0+8,t0+12,t0+15,t0+18,t0+21, t0+24, t0+26, t0+28, t0+30, t0+32, t0+34};
 	int i = 0;
 	system("rosservice call /ardrone/imu_recalib");	sleep(2);
 	while (ros::ok()) 
@@ -252,12 +285,29 @@ int main(int argc, char** argv)
 			}
 			else
 			{
-				if (i%2 == 0){
-							// twist_msg = tag_controller(Kx, Ky, Ki, Kz, Kangle);
+				
+				
+				if (i%4 == 0)
+				{
 					printf("front\n");
 					twist_msg = fly_front(Kz);
-					
 				}
+				if (i%4 == 1)
+				{
+					printf("left\n");
+					twist_msg = fly_left(Kz);
+				}
+				if (i%4 == 2)
+				{
+					printf("back\n");
+					twist_msg = fly_back(Kz);
+				}
+				if (i%4 == 3)
+				{
+					printf("right\n");
+					twist_msg = fly_right(Kz);
+				}
+				
 				//else twist_msg = turn(Kz);printf("turn\n");
 				//printf("publish\n");
 				pub_twist.publish(twist_msg);
