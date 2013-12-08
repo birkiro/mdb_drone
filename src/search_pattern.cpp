@@ -1,3 +1,4 @@
+
 /*
 Birkir Oskarsson
 University of Southern Denmark
@@ -136,16 +137,12 @@ geometry_msgs::Twist turn(float Kz){
 	return twist_msg_gen;
 }
 		
-geometry_msgs::Twist hover(float Kz){
+geometry_msgs::Twist hover(){
 	geometry_msgs::Twist twist_msg_gen;
-	float vz_pub;
-	vz_pub = Kz*(1850 - alt);
-	if (vz_pub < -0.3) vz_pub = -0.3;
-	if (vz_pub > 0.3) vz_pub = 0.3;
-
+	
 	twist_msg_gen.linear.x = 0.0;
 	twist_msg_gen.linear.y  = 0.0;
-	twist_msg_gen.linear.z  = vz_pub;
+	twist_msg_gen.linear.z  = 0.0;
 	twist_msg_gen.angular.x = 0.0; 		// 0 means auto-hover mode
 	twist_msg_gen.angular.y = 0.0;		// 0 means auto-hover mode
 	twist_msg_gen.angular.z = 0.0;
@@ -206,7 +203,7 @@ int main(int argc, char** argv)
 		while (((double)ros::Time::now().toSec() > start_time+takeoff_time) && ((double)ros::Time::now().toSec() < start_time + takeoff_time + hover_time))
 		{
 			nav_sub = node.subscribe("/ardrone/navdata", 1, nav_callback);
-			twist_msg = fly_front(Kz);
+			twist_msg = hover();
 			pub_twist.publish(twist_msg);
 			ros::spinOnce();
 			loop_rate.sleep();
