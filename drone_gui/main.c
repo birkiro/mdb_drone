@@ -6,7 +6,7 @@ time_t init_timestamp;
 static void initalize_drone (GtkWidget *wid, GtkWidget *win)
 {
     GtkWidget *dialog = NULL;
-    system("roslaunch ardrone_autonomy ardrone.launch &");
+    system("xterm -e sh /home/ardrone/ros_workspace/mdb_drone/bin/scripts/launch_script.sh");
     // add delay here
     init_timestamp = time(NULL);
     dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Drone has been initialized. Wait 10 seconds!");
@@ -61,10 +61,10 @@ static void camera_feed (GtkWidget *wid, GtkWidget *win)
     else
     {
         dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Drone Not Initialized!");
+        gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
+        gtk_dialog_run (GTK_DIALOG (dialog));
+        gtk_widget_destroy (dialog);
     }
-    gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
-    gtk_dialog_run (GTK_DIALOG (dialog));
-    gtk_widget_destroy (dialog);
 }
 
 GdkPixbuf *load_pixbuf_from_file (const char *filename)
