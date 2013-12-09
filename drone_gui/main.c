@@ -1,33 +1,26 @@
 #include <stdlib.h>
 #include <gtk/gtk.h>
 int init_flag = 0;
+time_t init_timestamp;
 
-static void helloWorld (GtkWidget *wid, GtkWidget *win)
-{
-  GtkWidget *dialog = NULL;
-
-  dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "Hello World!");
-  gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
-  gtk_dialog_run (GTK_DIALOG (dialog));
-  gtk_widget_destroy (dialog);
-}
 static void initalize_drone (GtkWidget *wid, GtkWidget *win)
 {
     GtkWidget *dialog = NULL;
     system("roslaunch ardrone_autonomy ardrone.launch &");
     // add delay here
+    init_timestamp = time(NULL);
     dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Drone has been initialized. Wait 10 seconds!");
     gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
     gtk_dialog_run (GTK_DIALOG (dialog));
     gtk_widget_destroy (dialog);
+
     init_flag = 1;
 }
 
 static void run_drone (GtkWidget *wid, GtkWidget *win)
 {
-
     GtkWidget *dialog = NULL;
-    if(init_flag == 1)
+    if(init_flag == 1 && (time(NULL) - init_timestamp) > 10)
     {
         system("rosrun mdb_drone tag_controller &");
         dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_NONE, "tag_controller is running");
@@ -43,24 +36,35 @@ static void run_drone (GtkWidget *wid, GtkWidget *win)
 
 static void emerg_land (GtkWidget *wid, GtkWidget *win)
 {
-  GtkWidget *dialog = NULL;
-
-  dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_NONE, "Emergency Landing called!");
-  gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
-  system("rosrun mdb_drone land &");
-  gtk_dialog_run (GTK_DIALOG (dialog));
-  gtk_widget_destroy (dialog);
+    GtkWidget *dialog = NULL;
+    if(init_flag == 1 && (time(NULL) - init_timestamp) > 10)
+    {
+        system("rosrun mdb_drone land &");
+        dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_NONE, "Emergency Landing called!");
+    }
+    else
+    {
+        dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_NONE, "Drone Not Initialized!");
+    }
+    gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
+    gtk_dialog_run (GTK_DIALOG (dialog));
+    gtk_widget_destroy (dialog);
 }
 
 static void camera_feed (GtkWidget *wid, GtkWidget *win)
 {
-  GtkWidget *dialog = NULL;
-
-  dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_NONE, "Emergency Landing called!");
-  gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
-  system("python /home/ardrone/ros_workspace/mdb_drone/src/drone_video_display.py");
-  gtk_dialog_run (GTK_DIALOG (dialog));
-  gtk_widget_destroy (dialog);
+    GtkWidget *dialog = NULL;
+    if(init_flag == 1 && (time(NULL) - init_timestamp) > 10)
+    {
+        system("python /home/ardrone/ros_workspace/mdb_drone/src/drone_video_display.py &");
+    }
+    else
+    {
+        dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_NONE, "Drone Not Initialized!");
+    }
+    gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
+    gtk_dialog_run (GTK_DIALOG (dialog));
+    gtk_widget_destroy (dialog);
 }
 
 GdkPixbuf *load_pixbuf_from_file (const char *filename)
@@ -127,10 +131,6 @@ int main (int argc, char *argv[])
 
     button = gtk_button_new_with_label("View Camera Feed");
     g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (camera_feed), (gpointer) win);
-    gtk_box_pack_start (GTK_BOX (vbox), button, TRUE, TRUE, 0);
-
-    button = gtk_button_new_from_stock (GTK_STOCK_DIALOG_INFO);
-    g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (helloWorld), (gpointer) win);
     gtk_box_pack_start (GTK_BOX (vbox), button, TRUE, TRUE, 0);
 
     button = gtk_button_new_from_stock (GTK_STOCK_CLOSE);
