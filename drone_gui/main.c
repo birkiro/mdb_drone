@@ -6,7 +6,9 @@ time_t init_timestamp;
 static void initalize_drone (GtkWidget *wid, GtkWidget *win)
 {
     GtkWidget *dialog = NULL;
-    system("xterm -e sh /home/ardrone/ros_workspace/mdb_drone/bin/scripts/launch_script.sh");
+    //system("xfce4-terminal -e \"roslaunch ardrone_autonomy ardrone.launch &\"");
+    system("xterm -e 'roslaunch ardrone_autonomy ardrone.launch' &");
+    //system("xfce4-terminal -H -e \"source /opt/ros/fuerte/setup.bash; roslaunch ardrone_autonomy ardrone.launch\"");
     // add delay here
     init_timestamp = time(NULL);
     dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Drone has been initialized. Wait 10 seconds!");
@@ -22,7 +24,8 @@ static void run_drone (GtkWidget *wid, GtkWidget *win)
     GtkWidget *dialog = NULL;
     if(init_flag == 1 && (time(NULL) - init_timestamp) > 10)
     {
-        system("rosrun mdb_drone tag_controller &");
+        system("xterm -hold -e 'rosrun mdb_drone tag_controller &'");
+
         dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "tag_controller is running");
     }
     else
@@ -39,7 +42,7 @@ static void emerg_land (GtkWidget *wid, GtkWidget *win)
     GtkWidget *dialog = NULL;
     if(init_flag == 1 && (time(NULL) - init_timestamp) > 10)
     {
-        system("rosrun mdb_drone land &");
+        system("xterm -hold -e 'rosrun mdb_drone land &'");
         dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Emergency Landing called!");
     }
     else
