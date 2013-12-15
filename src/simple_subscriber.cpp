@@ -8,6 +8,7 @@ University of Southern Denmark
 #include <ardrone_autonomy/Navdata.h>
 
 float tagx = 0; 
+float angZ;
 uint32_t tags_count;
 uint32_t tags_xc[10];
 // nav_callback: This function is called every time a message is published
@@ -16,6 +17,7 @@ uint32_t tags_xc[10];
 //		 in our state feedback controller.
 void nav_callback(const ardrone_autonomy::Navdata& msg_in)
 {
+	/*
 	// Take in state of ardrone	
 	printf("vector: %f\n", msg_in.tags_xc.size());
 	//vx = msg_in.vx;
@@ -25,6 +27,8 @@ void nav_callback(const ardrone_autonomy::Navdata& msg_in)
     {
 		tags_xc[i]=msg_in.tags_xc[i];
     }
+    * */
+    angZ = msg_in.rotZ;
 }
 			
 int main(int argc, char** argv)
@@ -37,7 +41,8 @@ int main(int argc, char** argv)
 	while (ros::ok()) 
 	{
 		// ardrone_autonomy/Navdata publishes on /ardrone/navdata
-		nav_sub = node.subscribe("/ardrone/navdata", 1, nav_callback);	
+		nav_sub = node.subscribe("/ardrone/navdata", 1, nav_callback);
+		printf("angle: %f\n", angZ);	
 		//ROS_INFO("getting sensor reading: %f [mm/s]", vx);
 		//ROS_INFO("Tag Distance: X: %f", tagx/*, msg_in.tags_yc, msg_in.tags_distance*/);	
 		ros::spinOnce(); 	// receive published messages constantly

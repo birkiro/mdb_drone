@@ -10,6 +10,7 @@ University of Southern Denmark
 uint32_t tags_count;
 uint32_t tags_xc[10];
 uint32_t tags_yc[10];
+uint32_t tags_type[10];
 uint32_t tags_distance[10];
 uint32_t tags_orientation[10];
 // nav_callback: This function is called every time a message is published
@@ -26,6 +27,7 @@ void nav_callback(const ardrone_autonomy::Navdata& msg_in)
     {
 		tags_xc[i] = msg_in.tags_xc[i];
 		tags_yc[i] = msg_in.tags_yc[i];
+		tags_type[i] = msg_in.tags_type[i];
 		tags_distance[i] = msg_in.tags_distance[i];
 		tags_orientation[i] = msg_in.tags_orientation[i];
     }
@@ -42,10 +44,22 @@ int main(int argc, char** argv)
 	{
 		// ardrone_autonomy/Navdata publishes on /ardrone/navdata
 		nav_sub = node.subscribe("/ardrone/navdata", 1, nav_callback);	
-		for (uint32_t j=0; j<tags_count; j++){
-			printf("tags_xc: %d => tags_yc: %d => tags_distance: %d => tags_orientation: %d\n", tags_xc[j], tags_yc[j], tags_distance[j], tags_orientation[j]);
+		if(tags_count == 1)
+		{
+			for (uint32_t j=0; j<tags_count; j++)
+			{
+				//printf("%d -tags_xc: %d => tags_yc: %d => tags_distance: %d => tags_orientation: %d\n", j, tags_xc[j], tags_yc[j], tags_distance[j], tags_orientation[j]);
+				printf("Tag[0]: %d\n", tags_type[0]);
+			}
 		}
-		
+		if(tags_count == 2)
+		{
+			for (uint32_t j=0; j<tags_count; j++)
+			{
+				//printf("%d -tags_xc: %d => tags_yc: %d => tags_distance: %d => tags_orientation: %d\n", j, tags_xc[j], tags_yc[j], tags_distance[j], tags_orientation[j]);
+				printf("Tag[0]: %d - Tag[1]: %d\n", tags_type[0], tags_type[1]);
+			}
+		}
 	
 		ros::spinOnce(); 	// receive published messages constantly
 	}
