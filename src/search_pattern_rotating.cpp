@@ -24,14 +24,14 @@ int32_t tags_type[10];
 int32_t z_des = 1850;
 float alt;
 float angY, angX, angZ;
-const int32_t xc_des  		= 500;
-const int32_t yc_des  		= 500;
-const int32_t tagDist_des  	= 150; // cm
+const int32_t xc_des  		= 500;  // 500 is the camera center
+const int32_t yc_des  		= 500;  // 500 is the camera center
+const int32_t tagDist_des  	= 200; // cm
 const int32_t tagOrient_des  	= 90;
 
 double takeoff_time	= 5.0;
 double hover_time	= 3.0;
-double fly_time		= 50.0;
+double fly_time		= 40.0;
 double land_time	= 2.0;
 double kill_time 	= 3.0;	
 double Tnow		= 0;
@@ -74,13 +74,11 @@ geometry_msgs::Twist tag_controller(float Kx, float Ky, float Ki, float Kz, floa
 	if(tags_count == 1){
 		if(tags_type[0] == 0) // front camera orange,blue,orange
 		{
-			//yaw_pub = -Kangle/10 * (90 - angZ);
-			if(tags_xc[0] < 450) yaw_pub = -0.4;
-			if(tags_xc[0] > 550) yaw_pub = 0.4;
-			else yaw_pub = 0.0;
-			vz_pub = Kz*(z_des - alt);
-			vy_pub = Ky*(yc_des - tags_yc[0]) + Ki*(yc_des - tags_yc[0])*(Tnow - Told);
-			vx_pub = -Kx*(150 - tags_distance[0]) + Ki*(150 - tags_distance[0])*(Tnow - Told);
+			yaw_pub = Kangle/10 * (500 - tags_xc[0]);
+			
+			vx_pub = -Kx*5*(tagDist_des - tags_distance[0]) + Ki*2*(tagDist_des - tags_distance[0])*(Tnow - Told);	
+			vy_pub = Ky*2.5*(yc_des - tags_yc[0]) + Ki*3*(yc_des - tags_yc[0])*(Tnow - Told);
+			vz_pub = Kz*5*(xc_des - tags_xc[0]) + Ki*0*(xc_des - tags_xc[0])*(Tnow - Told);
 			
 			if (yaw_pub > 0.3) yaw_pub = 0.3;
 			if (yaw_pub < -0.3) yaw_pub = -0.3;
@@ -92,13 +90,13 @@ geometry_msgs::Twist tag_controller(float Kx, float Ky, float Ki, float Kz, floa
 			if (vx_pub < -xy_lim) 	vx_pub = -xy_lim;
 
 			twist_msg_gen.linear.x  = vx_pub;
-			twist_msg_gen.linear.y  = 0.0;
-			twist_msg_gen.linear.z  = 0.0;
+			twist_msg_gen.linear.y  = vy_pub;
+			twist_msg_gen.linear.z  = vz_pub;
 			twist_msg_gen.angular.x = 1.0; 
 			twist_msg_gen.angular.y = 1.0;
-			twist_msg_gen.angular.z = yaw_pub;
+			twist_msg_gen.angular.z = 0.0;
 			
-			printf("vx: %.2f - vy: %.2f - vz: %.2f - yaw: %.2f\n", vx_pub, vy_pub, vz_pub, yaw_pub);
+			printf("vx: %.3f - vy: %.3f - vz: %.3f - yaw: %.3f\n", vx_pub, vy_pub, vz_pub, yaw_pub);
 		}
 		if(tags_type[0] == 131072) // bottom camera target only
 		{
@@ -130,11 +128,11 @@ geometry_msgs::Twist tag_controller(float Kx, float Ky, float Ki, float Kz, floa
 	}
 	else if(tags_count > 1) // two tags detected
 	{
-		yaw_pub = -Kangle*(tagOrient_des - tags_orientation[0]);
+		yaw_pub = -Kangle*(tagOrient_des - tags_orientation[1]);
 		//vz_pub = Kz*(tagDist_des - tags_distance[0]);
 		vz_pub = Kz*(z_des - alt);
-		tiltX = tags_xc[0] - (z_des/10)*sin(angX);
-		tiltY = tags_yc[0] - (z_des/10)*sin(angY);
+		tiltX = tags_xc[1] - (z_des/10)*sin(angX);
+		tiltY = tags_yc[1] - (z_des/10)*sin(angY);
 		vy_pub = Ky*(yc_des - tiltY) + Ki*(yc_des - tiltY)*(Tnow - Told);					// tag detection X parameter is Y axis of velocity
 		vx_pub = Kx*(xc_des - tiltX) + Ki*(xc_des - tiltX)*(Tnow - Told);					// tag detection Y parameter is X axis of velocity
 		if (yaw_pub > 0.3) yaw_pub = 0.3;
@@ -157,19 +155,16 @@ geometry_msgs::Twist tag_controller(float Kx, float Ky, float Ki, float Kz, floa
 	}
 	else 
 	{
-		yaw_pub = Kangle * (dest_angle - angZ);
 		vz_pub = Kz*(z_des - alt);
-		if (yaw_pub < -1.0) yaw_pub = -1.0;
-		if (yaw_pub > 1.0) yaw_pub = 1.0;
-		if (vz_pub < -0.3) vz_pub = -0.3;
 		if (vz_pub > 0.3) vz_pub = 0.3;
-		twist_msg_gen.linear.x = 0.0;//0.05;
+		if (vz_pub < -0.3) vz_pub = -0.3;
+		twist_msg_gen.linear.x = 0.0;;
 		twist_msg_gen.linear.y  = 0.0;
 		twist_msg_gen.linear.z  = vz_pub;
-		twist_msg_gen.angular.x = 1.0; 		// 0 means auto-hover mode, 1 means camera stabilization
-		twist_msg_gen.angular.y = 1.0;		// 0 means auto-hover mode, 1 means camera stabilization
-		twist_msg_gen.angular.z = 0.0;//yaw_pub;
-		printf("des: %.2f - Yaw: %.2f - yaw_pub: %.2f \n", dest_angle, angZ, yaw_pub);
+		twist_msg_gen.angular.x = 0.0; 		// 0 means auto-hover mode, 1 means camera stabilization
+		twist_msg_gen.angular.y = 0.0;		// 0 means auto-hover mode, 1 means camera stabilization
+		twist_msg_gen.angular.z = 0.0;
+		//printf("no tags found, waiting\n");
 	}
 	
 	return twist_msg_gen;
@@ -264,8 +259,8 @@ int main(int argc, char** argv)
 			loop_rate.sleep();			
 		}	// END Landing
 
-		// Start Fly
-		while ( ((double)ros::Time::now().toSec() > start_time+takeoff_time + hover_time) && ((double)ros::Time::now().toSec() < search_time[i] + hover_time))
+		// Start Controlling
+		while ( ((double)ros::Time::now().toSec() > start_time+takeoff_time + hover_time) && ((double)ros::Time::now().toSec() < fly_time + search_time[11] + hover_time))//search_time[i] + hover_time))
 		{	
 			//printf("ST=>%f\n", search_time[i]);
 			if (!Told) {
